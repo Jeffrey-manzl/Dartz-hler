@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dart Zähler</title>
+<meta name="theme-color" content="#e7ebe7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16201d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dart">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e7ebe7;--surface:#ffffff;--surface-2:#d9dfda;--text:#121614;--muted:#5d6762;--line:#c6cec8;
+  --accent:#d7262e;--dbl:#138a4c;--tpl:#d7262e;--dbl-soft:#d9efe2;--tpl-soft:#f8dcde;
+  --key:#ffffff;--key-ink:#121614;--on-ink:#ffffff;--chip:#121614;--chip-ink:#ffffff;
+  --pill:#121614;--pill-ink:#ffffff;
+  --num:"Barlow Condensed","Avenir Next Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;
+  --ui:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --kh:clamp(42px,6.6vh,58px);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16201d;--surface:#202b27;--surface-2:#2a3632;--text:#eef3ef;--muted:#9aa8a1;--line:#35423d;
+    --accent:#ff4f57;--dbl:#3fcf86;--tpl:#ff4f57;--dbl-soft:#1d3a2c;--tpl-soft:#41232a;
+    --key:#26322e;--key-ink:#eef3ef;--on-ink:#0f1513;--chip:#eef3ef;--chip-ink:#16201d;
+    --pill:#eef3ef;--pill-ink:#16201d;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16201d;--surface:#202b27;--surface-2:#2a3632;--text:#eef3ef;--muted:#9aa8a1;--line:#35423d;
+  --accent:#ff4f57;--dbl:#3fcf86;--tpl:#ff4f57;--dbl-soft:#1d3a2c;--tpl-soft:#41232a;
+  --key:#26322e;--key-ink:#eef3ef;--on-ink:#0f1513;--chip:#eef3ef;--chip-ink:#16201d;
+  --pill:#eef3ef;--pill-ink:#16201d;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--ui);-webkit-tap-highlight-color:transparent;overscroll-behavior:none;-webkit-touch-callout:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+button:focus-visible,input:focus-visible{outline:3px solid var(--dbl);outline-offset:2px}
+#app{height:100%;display:flex;flex-direction:column;max-width:620px;margin:0 auto}
+
+/* Setup */
+.setup{flex:1;overflow:auto;padding:24px 16px 32px}
+.setup h1{font-family:var(--num);font-weight:700;font-size:44px;line-height:1;margin:0 0 6px}
+.setup .sub{color:var(--muted);margin:0 0 24px;font-size:16px}
+.sec{margin-bottom:24px}
+.sec h2{font-size:15px;font-weight:600;color:var(--muted);margin:0 0 8px}
+.prow{display:flex;gap:8px;margin-bottom:8px}
+.prow input{flex:1;min-width:0;height:52px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:0 14px;font:500 18px var(--ui)}
+.prow .x{width:52px;height:52px;border-radius:12px;background:var(--surface-2);font-size:24px;color:var(--muted)}
+.prow .x:disabled{opacity:.35}
+.add{height:48px;border-radius:12px;border:2px dashed var(--line);width:100%;font-weight:600;color:var(--muted)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--surface-2);padding:4px;border-radius:14px}
+.seg button{min-height:50px;border-radius:10px;font-weight:700;font-size:17px;padding:6px 4px;line-height:1.15}
+.seg button small{display:block;font-weight:500;font-size:12px;color:var(--muted);margin-top:2px}
+.seg button.on{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.btn{display:block;width:100%;min-height:54px;border-radius:14px;font-weight:700;font-size:17px;margin-top:8px;background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.big{min-height:60px;font-size:19px}
+.resume{margin:0 0 24px}
+
+/* Game */
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.hbtn{padding:8px 14px;border-radius:999px;background:var(--surface);font-size:15px;font-weight:600;border:1px solid var(--line)}
+.board{flex:1 1 auto;min-height:0;overflow:auto;padding:2px 12px 10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.card{background:var(--surface);border:2px solid transparent;border-radius:12px;padding:8px 12px 10px}
+.card.on{border-color:var(--accent)}
+.card.win{border-color:var(--dbl)}
+.card .nm{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-weight:700;font-size:16px}
+.card .nm .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .legs{font-size:13px;font-weight:600;color:var(--dbl);white-space:nowrap}
+.card .sc{font-family:var(--num);font-weight:700;font-size:42px;line-height:1;margin:2px 0}
+.card .meta{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.card .mini{font-family:var(--num);font-weight:600;font-size:16px;margin-top:4px;color:var(--dbl)}
+
+.turn{background:var(--surface);border-top:1px solid var(--line);padding:10px 14px 8px}
+.turn-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.lbl{font-size:13px;color:var(--muted);font-weight:500}
+.who{font-size:22px;font-weight:700;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw}
+.rest-w{text-align:right}
+.rest{font-family:var(--num);font-weight:700;font-size:54px;line-height:.9}
+.slots{display:grid;grid-template-columns:repeat(3,1fr) 72px;gap:6px;margin-top:8px}
+.slot{height:40px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;font-family:var(--num);font-weight:700;font-size:23px}
+.slot.d{background:var(--dbl-soft);color:var(--dbl)}
+.slot.t{background:var(--tpl-soft);color:var(--tpl)}
+.slot.empty{background:transparent;border:2px dashed var(--line)}
+.slot.next{border-color:var(--accent)}
+.sum{height:40px;border-radius:10px;background:var(--text);color:var(--surface);display:flex;align-items:center;justify-content:center;font-family:var(--num);font-weight:700;font-size:24px}
+.co{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:34px;margin-top:8px}
+.co-l{font-weight:700;font-size:15px;margin-right:2px}
+.co-x{color:var(--muted);font-size:15px}
+.chip{padding:2px 11px;border-radius:999px;background:var(--chip);color:var(--chip-ink);font-family:var(--num);font-weight:700;font-size:21px;line-height:1.35}
+.chip.d{background:var(--dbl);color:var(--on-ink)}
+.chip.t{background:var(--tpl);color:var(--on-ink)}
+
+.pad{background:var(--surface-2);padding:8px 10px 10px}
+.mods{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
+.mod{height:var(--kh);border-radius:12px;font-weight:700;font-size:18px;background:var(--key);border:2px solid var(--line)}
+.mod.d{border-color:var(--dbl);color:var(--dbl)}
+.mod.t{border-color:var(--tpl);color:var(--tpl)}
+.mod.d.on{background:var(--dbl);color:var(--on-ink)}
+.mod.t.on{background:var(--tpl);color:var(--on-ink)}
+.mod.u{color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.k{height:var(--kh);border-radius:12px;background:var(--key);color:var(--key-ink);font-family:var(--num);font-weight:700;font-size:25px;box-shadow:0 1px 0 var(--line)}
+.k:active,.mod:active{transform:scale(.95)}
+.k:disabled{opacity:.3}
+.pad.m2 .k.num{background:var(--dbl-soft);color:var(--dbl)}
+.pad.m3 .k.num{background:var(--tpl-soft);color:var(--tpl)}
+.k.miss{grid-column:span 2;font-family:var(--ui);font-size:17px;color:var(--muted)}
+.k.b25{color:var(--dbl)}
+.pad.m2 .k.b25{background:var(--dbl-soft)}
+.k.bull{grid-column:span 2;color:var(--tpl)}
+.k.bull small{font-size:15px;margin-left:5px;opacity:.75}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20}
+.sheet{width:100%;max-width:520px;background:var(--surface);border-radius:20px;padding:22px 18px 14px;text-align:center}
+.sheet .big{font-size:44px;line-height:1}
+.sheet h2{font-family:var(--num);font-weight:700;font-size:34px;margin:6px 0 4px;line-height:1.05}
+.sheet p{color:var(--muted);margin:0 0 6px;font-size:16px}
+.sheet .stand{font-weight:600;color:var(--text)}
+
+.toastw{position:fixed;left:0;right:0;top:0;padding-top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;justify-content:center;pointer-events:none;z-index:30;opacity:0;transform:translateY(-10px);transition:opacity .18s,transform .18s}
+.toastw.show{opacity:1;transform:none}
+.pill{background:var(--pill);color:var(--pill-ink);padding:10px 18px;border-radius:999px;font-weight:700;font-size:17px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.pill.bad{background:var(--tpl);color:#fff}
+@media (prefers-reduced-motion:reduce){.toastw{transition:none}.k:active,.mod:active{transform:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toastw" role="status" aria-live="polite"></div>
+<script>
+(function(){
+const KEY='dartzaehler-v1';
+const OUT_LABEL={single:'Single Out',double:'Double Out',master:'Master Out'};
+const OUT_SUB={single:'jedes Feld',double:'nur Doppel',master:'Doppel oder Triple'};
+let S={names:['Spieler 1','Spieler 2'],start:501,out:'double',game:null,view:'setup'};
+try{
+  const raw=localStorage.getItem(KEY);
+  if(raw){
+    const o=JSON.parse(raw);
+    if(o&&typeof o==='object'){
+      if(Array.isArray(o.names)&&o.names.length) S.names=o.names.map(String);
+      if([301,501,701].includes(o.start)) S.start=o.start;
+      if(OUT_LABEL[o.out]) S.out=o.out;
+      if(o.game&&Array.isArray(o.game.players)&&Array.isArray(o.game.legs)&&o.game.legs.length&&OUT_LABEL[o.game.out]) S.game=o.game;
+      if(o.view==='game'&&S.game) S.view='game';
+    }
+  }
+}catch(e){}
+let mod=1;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function lab(d){if(d.n===0)return 'Miss';if(d.n===25)return d.m===2?'Bull':'25';return (d.m===3?'T':d.m===2?'D':'')+d.n;}
+function finOk(d,out){return out==='single'||d.m===2||(out==='master'&&d.m===3);}
+function fmt(x){return x.toFixed(1).replace('.',',');}
+function buzz(){try{if(navigator.vibrate)navigator.vibrate(8);}catch(e){}}
+
+/* ---------- Checkout engine ---------- */
+const SEGS=[];
+for(let n=1;n<=20;n++){SEGS.push({m:1,n:n},{m:2,n:n},{m:3,n:n});}
+SEGS.push({m:1,n:25},{m:2,n:25});
+SEGS.forEach(s=>{s.v=s.m*s.n;});
+const DORDER=[20,16,10,8,18,12,4,14,6,2,19,17,15,13,11,9,7,5,3,1,25];
+function tCost(n){return 2.4+(20-n)*0.08;}
+function setupCost(s){if(s.m===1)return s.n===25?3:1;if(s.m===2)return s.n===25?3.8:3;return tCost(s.n);}
+function finalCost(s,out){if(out==='single')return setupCost(s);if(s.m===2)return DORDER.indexOf(s.n)*0.15;return tCost(s.n);}
+const FIN={};
+['single','double','master'].forEach(o=>{
+  const map={};
+  SEGS.forEach(s=>{
+    if(!finOk(s,o))return;
+    const c=finalCost(s,o);
+    if(!map[s.v]||c<map[s.v].c) map[s.v]={m:s.m,n:s.n,v:s.v,c:c};
+  });
+  FIN[o]=map;
+});
+const SET=SEGS.map(s=>({m:s.m,n:s.n,v:s.v,c:setupCost(s)}));
+const memo={};
+function bestRoute(R,k,out){
+  if(R<=0||k<=0)return null;
+  const key=R+'|'+k+'|'+out;
+  if(key in memo)return memo[key];
+  const F=FIN[out];let ans=null;
+  if(F[R]) ans=[F[R]];
+  if(!ans&&k>=2){
+    let bc=Infinity;
+    for(const a of SET){const f=F[R-a.v];if(f&&a.c+f.c<bc){bc=a.c+f.c;ans=[a,f];}}
+  }
+  if(!ans&&k>=3){
+    let bc=Infinity;
+    for(let i=0;i<SET.length;i++){
+      const a=SET[i];if(a.v>=R)continue;
+      for(let j=i;j<SET.length;j++){
+        const b=SET[j];const f=F[R-a.v-b.v];
+        if(f){const c=a.c+b.c+f.c;if(c<bc){bc=c;ans=a.v>=b.v?[a,b,f]:[b,a,f];}}
+      }
+    }
+  }
+  memo[key]=ans;return ans;
+}
+
+/* ---------- Game logic (replayed from darts) ---------- */
+function computeLeg(g,leg){
+  const n=g.players.length;
+  const st=g.players.map(()=>({rest:g.start,darts:0,scored:0,lastTurn:null}));
+  let cur=leg.starter%n,turn=[],tStart=g.start,winner=null,ev=null;
+  for(let i=0;i<leg.darts.length;i++){
+    const d=leg.darts[i],p=st[cur];
+    if(!turn.length) tStart=p.rest;
+    turn.push(d);p.darts++;
+    const v=d.m*d.n,after=p.rest-v;
+    let bust=false,win=false;
+    if(after<0) bust=true;
+    else if(after===0){if(finOk(d,g.out))win=true;else bust=true;}
+    else if(after===1&&g.out!=='single') bust=true;
+    if(bust){
+      p.scored-=(tStart-p.rest);p.rest=tStart;
+      p.lastTurn={darts:turn,score:0,bust:true};
+      ev={type:'bust',index:i,rest:p.rest};
+      turn=[];cur=(cur+1)%n;continue;
+    }
+    p.rest=after;p.scored+=v;
+    if(win){p.lastTurn={darts:turn,score:tStart};winner=cur;ev={type:'win',index:i,score:tStart};turn=[];break;}
+    if(turn.length===3){
+      const sc=tStart-p.rest;
+      p.lastTurn={darts:turn,score:sc};
+      ev={type:'turn',index:i,score:sc};
+      turn=[];cur=(cur+1)%n;
+    }
+  }
+  return {st:st,cur:cur,turn:turn,winner:winner,ev:ev};
+}
+function curLeg(){const g=S.game;return g.legs[g.legs.length-1];}
+
+function startGame(){
+  const names=S.names.map((n,i)=>String(n).trim()||('Spieler '+(i+1)));
+  S.names=names;
+  S.game={players:names,start:S.start,out:S.out,legs:[{starter:0,darts:[]}]};
+  S.view='game';mod=1;save();render();
+}
+function hit(n){
+  const g=S.game;if(!g)return;
+  const leg=curLeg();
+  const before=computeLeg(g,leg);
+  if(before.winner!==null)return;
+  let m=mod;
+  if(n===0)m=1;
+  if(n===50){n=25;m=2;}
+  if(n===25&&m===3)return;
+  leg.darts.push({m:m,n:n});mod=1;
+  const r=computeLeg(g,leg);
+  const ev=r.ev,idx=leg.darts.length-1,who=g.players[before.cur];
+  if(ev&&ev.index===idx){
+    if(ev.type==='bust') toast('Bust! '+who+' bleibt auf '+ev.rest,'bad');
+    else if(ev.type==='turn') toast(who+': '+ev.score+(ev.score===180?' 🎯':''));
+  }
+  buzz();save();render();
+}
+function undo(){
+  const g=S.game;if(!g)return;
+  let leg=curLeg();
+  if(!leg.darts.length){
+    if(g.legs.length>1){g.legs.pop();leg=curLeg();}else return;
+  }
+  leg.darts.pop();mod=1;save();render();
+}
+function nextLeg(){
+  const g=S.game,last=curLeg();
+  g.legs.push({starter:(last.starter+1)%g.players.length,darts:[]});
+  mod=1;save();render();
+}
+
+/* ---------- Rendering ---------- */
+const app=document.getElementById('app');
+function render(){if(S.view==='game'&&S.game)renderGame();else renderSetup();}
+function chips(route){return route.map(s=>'<span class="chip'+(s.m===2?' d':s.m===3?' t':'')+'">'+lab(s)+'</span>').join('');}
+
+function renderSetup(){
+  const one=S.names.length<=1;
+  app.innerHTML='<div class="setup">'+
+    '<h1>Dart Zähler</h1><p class="sub">Würfe eintragen, Rest und Finish sofort sehen.</p>'+
+    (S.game?'<div class="resume"><button class="btn primary" data-act="resume">Laufendes Spiel fortsetzen</button></div>':'')+
+    '<div class="sec"><h2>Spieler</h2>'+
+      S.names.map((n,i)=>'<div class="prow"><input data-i="'+i+'" value="'+esc(n)+'" placeholder="Spieler '+(i+1)+'" enterkeyhint="next" autocomplete="off" aria-label="Name Spieler '+(i+1)+'"><button class="x" data-act="rm" data-i="'+i+'" aria-label="Spieler entfernen"'+(one?' disabled':'')+'>×</button></div>').join('')+
+      (S.names.length<8?'<button class="add" data-act="add">+ Spieler hinzufügen</button>':'')+
+    '</div>'+
+    '<div class="sec"><h2>Startpunkte</h2><div class="seg">'+
+      [301,501,701].map(v=>'<button data-act="start" data-v="'+v+'" class="'+(S.start===v?'on':'')+'">'+v+'</button>').join('')+
+    '</div></div>'+
+    '<div class="sec"><h2>Check-out</h2><div class="seg">'+
+      ['single','double','master'].map(o=>'<button data-act="out" data-v="'+o+'" class="'+(S.out===o?'on':'')+'">'+OUT_LABEL[o]+'<small>'+OUT_SUB[o]+'</small></button>').join('')+
+    '</div></div>'+
+    '<button class="btn primary big" data-act="go">Spiel starten</button>'+
+  '</div>';
+}
+
+function renderGame(){
+  const g=S.game,legs=g.legs;
+  const won=g.players.map(()=>0);let res=null;
+  legs.forEach((leg,i)=>{const r=computeLeg(g,leg);if(r.winner!==null)won[r.winner]++;if(i===legs.length-1)res=r;});
+  const done=res.winner!==null,cur=res.cur,p=res.st[cur];
+  const dartsLeft=3-res.turn.length;
+  const showLegs=legs.length>1||won.some(x=>x>0);
+
+  const cards=g.players.map((name,i)=>{
+    const s=res.st[i],on=!done&&i===cur;
+    const avg=s.darts?fmt(s.scored/s.darts*3):'0,0';
+    const lt=s.lastTurn?(s.lastTurn.bust?'Bust':String(s.lastTurn.score)):'';
+    const rt=(!on&&!done)?bestRoute(s.rest,3,g.out):null;
+    return '<div class="card'+(on?' on':'')+(done&&res.winner===i?' win':'')+'">'+
+      '<div class="nm"><span class="n">'+esc(name)+'</span>'+(showLegs?'<span class="legs">'+won[i]+(won[i]===1?' Leg':' Legs')+'</span>':'')+'</div>'+
+      '<div class="sc">'+s.rest+'</div>'+
+      '<div class="meta"><span>Ø '+avg+'</span>'+(lt?'<span>Letzte '+lt+'</span>':'')+'</div>'+
+      (rt?'<div class="mini">'+rt.map(lab).join(' ')+'</div>':'')+
+    '</div>';
+  }).join('');
+
+  const slots=[0,1,2].map(i=>{
+    const d=res.turn[i];
+    if(d)return '<div class="slot'+(d.m===2?' d':d.m===3?' t':'')+'">'+lab(d)+'</div>';
+    return '<div class="slot empty'+(i===res.turn.length?' next':'')+'"></div>';
+  }).join('');
+  const tsum=res.turn.reduce((a,d)=>a+d.m*d.n,0);
+
+  let co='';
+  if(!done){
+    const route=bestRoute(p.rest,dartsLeft,g.out);
+    if(route) co='<span class="co-l">Finish</span>'+chips(route);
+    else if(dartsLeft<3&&bestRoute(p.rest,3,g.out)) co='<span class="co-x">Kein Finish mit '+dartsLeft+(dartsLeft===1?' Dart':' Darts')+', nächste Aufnahme: '+bestRoute(p.rest,3,g.out).map(lab).join(' ')+'</span>';
+    else co='<span class="co-x">Noch kein Finish möglich</span>';
+  }
+
+  const pfx=mod===2?'D':mod===3?'T':'';
+  let nums='';
+  for(let n=1;n<=20;n++) nums+='<button class="k num" data-act="hit" data-n="'+n+'">'+pfx+n+'</button>';
+
+  let modal='';
+  if(done){
+    const w=res.st[res.winner];
+    const finDart=w.lastTurn.darts[w.lastTurn.darts.length-1];
+    const avg=w.darts?fmt(w.scored/w.darts*3):'0,0';
+    const stand=g.players.length>1?'<p class="stand">Stand: '+g.players.map((n,i)=>esc(n)+' '+won[i]).join(', ')+'</p>':'';
+    modal='<div class="modal"><div class="sheet" role="dialog" aria-modal="true">'+
+      '<div class="big">🎯</div><h2>'+esc(g.players[res.winner])+' gewinnt das Leg</h2>'+
+      '<p>Check-out '+w.lastTurn.score+' mit '+lab(finDart)+', '+w.darts+' Darts, Ø '+avg+'</p>'+stand+
+      '<button class="btn primary big" data-act="nextleg">Nächstes Leg</button>'+
+      '<button class="btn" data-act="undo">Letzten Wurf zurücknehmen</button>'+
+      '<button class="btn" data-act="setup">Neues Spiel</button>'+
+    '</div></div>';
+  }
+
+  app.innerHTML=
+    '<header class="hdr"><div class="tags"><span class="tag">'+g.start+'</span><span class="tag">'+OUT_LABEL[g.out]+'</span><span class="tag">Leg '+legs.length+'</span></div>'+
+    '<button class="hbtn" data-act="setup">Menü</button></header>'+
+    '<main class="board"><div class="cards">'+cards+'</div></main>'+
+    '<section class="turn">'+
+      '<div class="turn-top"><div><div class="lbl">Am Wurf</div><div class="who">'+esc(g.players[cur])+'</div></div>'+
+      '<div class="rest-w"><div class="lbl">Rest</div><div class="rest">'+p.rest+'</div></div></div>'+
+      '<div class="slots">'+slots+'<div class="sum" aria-label="Summe Aufnahme">'+tsum+'</div></div>'+
+      '<div class="co">'+co+'</div>'+
+    '</section>'+
+    '<section class="pad m'+mod+'">'+
+      '<div class="mods">'+
+        '<button class="mod d'+(mod===2?' on':'')+'" data-act="mod" data-m="2" aria-pressed="'+(mod===2)+'">Double</button>'+
+        '<button class="mod t'+(mod===3?' on':'')+'" data-act="mod" data-m="3" aria-pressed="'+(mod===3)+'">Triple</button>'+
+        '<button class="mod u" data-act="undo">↶ Zurück</button>'+
+      '</div>'+
+      '<div class="nums">'+nums+
+        '<button class="k miss" data-act="hit" data-n="0">Miss</button>'+
+        '<button class="k b25" data-act="hit" data-n="25"'+(mod===3?' disabled':'')+'>'+(mod===2?'Bull':'25')+'</button>'+
+        '<button class="k bull" data-act="hit" data-n="50">Bull<small>50</small></button>'+
+      '</div>'+
+    '</section>'+modal;
+}
+
+/* ---------- Toast ---------- */
+const toastEl=document.getElementById('toast');let tt=null;
+function toast(msg,kind){
+  toastEl.innerHTML='<div class="pill '+(kind||'')+'">'+esc(msg)+'</div>';
+  toastEl.classList.add('show');clearTimeout(tt);
+  tt=setTimeout(()=>toastEl.classList.remove('show'),kind==='bad'?2000:1300);
+}
+
+/* ---------- Events ---------- */
+function focusLast(){const ins=app.querySelectorAll('input[data-i]');if(ins.length)ins[ins.length-1].focus();}
+app.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
+  const a=b.dataset.act;
+  if(a==='add'){if(S.names.length<8){S.names.push('');save();render();focusLast();}}
+  else if(a==='rm'){if(S.names.length>1){S.names.splice(+b.dataset.i,1);save();render();}}
+  else if(a==='start'){S.start=+b.dataset.v;save();render();}
+  else if(a==='out'){S.out=b.dataset.v;save();render();}
+  else if(a==='go'){startGame();}
+  else if(a==='resume'){S.view='game';save();render();}
+  else if(a==='setup'){S.view='setup';mod=1;save();render();}
+  else if(a==='mod'){const m=+b.dataset.m;mod=(mod===m)?1:m;render();}
+  else if(a==='hit'){hit(+b.dataset.n);}
+  else if(a==='undo'){undo();}
+  else if(a==='nextleg'){nextLeg();}
+});
+app.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.matches&&t.matches('input[data-i]')){S.names[+t.dataset.i]=t.value;save();}
+});
+app.addEventListener('keydown',e=>{
+  const t=e.target;
+  if(t.matches&&t.matches('input[data-i]')&&e.key==='Enter'){
+    e.preventDefault();
+    const i=+t.dataset.i,ins=app.querySelectorAll('input[data-i]');
+    if(i<ins.length-1)ins[i+1].focus();
+    else if(S.names.length<8){S.names.push('');save();render();focusLast();}
+    else t.blur();
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(S.view!=='game'||!S.game)return;
+  if(e.target&&e.target.closest&&e.target.closest('input'))return;
+  const k=e.key;
+  if(k==='d'||k==='D'){mod=mod===2?1:2;render();}
+  else if(k==='t'||k==='T'){mod=mod===3?1:3;render();}
+  else if(k==='Backspace'){e.preventDefault();undo();}
+});
+render();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
+}
+</script>
+</body>
+</html>
